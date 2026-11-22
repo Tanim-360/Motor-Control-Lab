@@ -1,0 +1,1137 @@
+/* ---------- Router (Stage 1: navigation) ---------- */
+var STUBS={
+};
+Object.keys(STUBS).forEach(function(k){
+  var s=STUBS[k];
+  document.getElementById("v-"+k).innerHTML='<h1>'+s[0]+'</h1><div class="stub"><h3>Coming in '+s[1]+'</h3><p>'+s[2]+'</p><a href="#home">Back to home</a></div>';
+});/* ---------- DOL module (Stage 3) ---------- */
+var D={start:false,stop:false,ol:false}, deng=new Engine(dolSpec());
+var KK=function(){return deng.s.K1}, AA=function(){return !D.stop}, ON=function(){return true};
+var cw=[
+  [14,60,50,60,ON],
+  [90,60,140,60,AA],
+  [180,60,195,60,function(){return AA()&&D.start}],
+  [195,60,215,60,function(){return AA()&&(D.start||KK())}],
+  [125,60,125,120,AA],
+  [125,120,140,120,AA],
+  [180,120,195,120,function(){return AA()&&KK()}],
+  [195,120,195,60,function(){return AA()&&KK()}],
+  [245,60,277,60,KK],
+  [313,60,346,60,KK]
+], pw=[];
+[70,130,190].forEach(function(x){
+  pw.push([x,18,x,42,ON],[x,62,x,92,ON],[x,112,x,136,KK],[x,156,x,190,KK]);
+});
+function mkW(id,list){
+  var g=document.getElementById(id);
+  list.forEach(function(s){
+    var l=document.createElementNS(NS,"line");
+    l.setAttribute("x1",s[0]);l.setAttribute("y1",s[1]);l.setAttribute("x2",s[2]);l.setAttribute("y2",s[3]);
+    l.setAttribute("class","w");s.push(l);g.appendChild(l);
+  });
+}
+mkW("dCtlW",cw); mkW("dPwrW",pw);
+function dsolve(){deng.set("start",D.start);deng.set("stop",D.stop);deng.set("ol",D.ol);deng.solve()}
+function sy(id,y2){document.getElementById(id).setAttribute("y2",y2)}
+function dDraw(){
+  [cw,pw].forEach(function(L){L.forEach(function(s){s[5].classList.toggle("on",!!s[4]())})});
+  var K=KK();
+  document.getElementById("dCoil").classList.toggle("on",K);
+  sy("dStopSym",D.stop?42:60); sy("dStartSym",D.start?60:46); sy("dKSym",K?120:106); sy("dOlSym",D.ol?42:60);
+  [70,130,190].forEach(function(x,i){
+    var l=document.getElementById("dk"+i);
+    l.setAttribute("x2",K?x:x+13); l.setAttribute("y2",K?112:104);
+  });
+  document.getElementById("dFan").classList.toggle("spin",K);
+  document.getElementById("dOlBox").classList.toggle("trip",D.ol);
+  document.getElementById("dOl").textContent=D.ol?"Reset overload":"Trip overload";
+  document.getElementById("dStatus").textContent=D.ol
+    ? "Overload tripped. K1 has dropped out and the motor is stopped. Reset the overload, then press Start."
+    : K ? "Motor running. K1’s main contacts are closed, and its auxiliary contact holds the coil on."
+        : "Motor stopped. Press Start and release it.";
+}
+function dHold(id,key){
+  var b=document.getElementById(id);
+  function dn(e){e.preventDefault();D[key]=true;b.classList.add("down");dsolve();dDraw()}
+  function up(){if(!D[key])return;D[key]=false;b.classList.remove("down");dsolve();dDraw()}
+  b.addEventListener("pointerdown",dn);
+  ["pointerup","pointerleave","pointercancel"].forEach(function(t){b.addEventListener(t,up)});
+  b.addEventListener("keydown",function(e){if((e.key===" "||e.key==="Enter")&&!e.repeat)dn(e)});
+  b.addEventListener("keyup",function(e){if(e.key===" "||e.key==="Enter")up()});
+}
+dHold("dStart","start"); dHold("dStop","stop");
+document.getElementById("dOl").addEventListener("click",function(){D.ol=!D.ol;dsolve();dDraw()});
+dsolve(); dDraw();
+
+
+function route(){
+  var v=(location.hash||"#home").slice(1);
+  if(!document.getElementById("v-"+v)) v="home";
+  document.querySelectorAll(".view").forEach(function(e){e.classList.toggle("active",e.id==="v-"+v)});
+  document.querySelectorAll("nav a").forEach(function(a){
+    var nv/* ---------- Component explainer (Stage 4) ---------- */
+var INFO={
+  mcb:{t:"MCB (miniature circuit breaker)",w:"A switch that opens by itself when it senses a short circuit or a heavy, sustained overcurrent. It also lets you isolate the circuit by hand for maintenance.",c:"It is the first device in the power path. If it is off, nothing downstream gets power. It does not protect the motor from a slow overload; the overload relay does that."},
+  kmain:{t:"Contactor main contacts (K1)",w:"Three heavy-duty contacts, one per phase, that close together to connect the motor to the supply. They are built to handle motor current and the arc when they open.",c:"They close when coil K1 is energized and open again when it drops out. Watch them in the diagram as you press Start and Stop."},
+  olr:{t:"Thermal overload relay",w:"It senses the motor current through heating elements. If the motor draws too much for too long, for example a jammed load, a bimetal strip bends and trips a contact. It does not interrupt the motor current itself.",c:"Its trip action opens the overload contact in the control circuit, which de-energizes the coil. It needs a manual reset. Use the Trip overload button to try it."},
+  motor:{t:"Three-phase induction motor",w:"Three alternating currents, each shifted in time, create a rotating magnetic field in the stator. The rotor follows that field and turns.",c:"In a DOL start the motor sees full voltage straight away, so the starting current is roughly 6 to 8 times the rated current for a moment. That is fine for small motors, and it is why larger ones use star-delta."},
+  stop:{t:"Stop push button (normally closed)",w:"A button whose contact is closed at rest and opens while you press it.",c:"It sits in series with the coil, so pressing it breaks the circuit and K1 drops out. It is wired normally closed so that a broken wire also stops the motor, which is the safe failure."},
+  start:{t:"Start push button (normally open)",w:"A button whose contact is open at rest and closes only while you hold it. A spring returns it when you let go.",c:"It gives K1 its first push of current. After that the auxiliary contact takes over, so the button can be released."},
+  aux:{t:"K1 auxiliary contact (seal-in)",w:"A small contact that moves together with the contactor main contacts. It carries only control current.",c:"It is wired in parallel with Start. Once K1 pulls in, this contact closes and holds the coil on, which is called a seal-in or holding contact. If power fails, it opens, so the motor does not restart by itself when power returns."},
+  olc:{t:"Overload contact (normally closed)",w:"The auxiliary contact of the overload relay. It stays closed until the relay trips.",c:"It is in series with the coil. When the relay trips, this contact opens, the coil loses power and the motor stops."},
+  coil:{t:"Contactor coil (K1)",w:"An electromagnet. When current flows through it, it pulls an armature that closes the contacts. A spring opens them again when the current stops.",c:"It runs on a small control current, often 24 V DC or 230 V AC, so the Start and Stop buttons never carry the motor current."}
+};
+var HOT=[
+  ["dCtlW","stop",44,40,52,36,"Stop push button"],
+  ["dCtlW","start",134,40,52,36,"Start push button"],
+  ["dCtlW","aux",134,100,52,32,"K1 auxiliary contact"],
+  ["dCtlW","olc",209,40,42,36,"Overload contact"],
+  ["dCtlW","coil",275,38,40,44,"Contactor coil K1"],
+  ["dPwrW","mcb",40,42,180,20,"MCB"],
+  ["dPwrW","kmain",55,86,150,32,"K1 main contacts"],
+  ["dPwrW","olr",40,136,180,20,"Overload relay"],
+  ["dPwrW","motor",40,190,180,62,"Motor"]
+];
+function showInfo(key,r){
+  var d=INFO[key];
+  document.getElementById("infoT").textContent=d.t;
+  document.getElementById("infoP").textContent=d.w;
+  document.getElementById("infoC").textContent="In this circuit: "+d.c;
+  document.getElementById("info").hidden=false;
+  HOT.forEach(function(h){h[7].classList.toggle("sel",h[7]===r)});
+}
+HOT.forEach(function(h){
+  var r=document.createElementNS(NS,"rect");
+  r.setAttribute("x",h[2]);r.setAttribute("y",h[3]);r.setAttribute("width",h[4]);r.setAttribute("height",h[5]);
+  r.setAttribute("class","hot");r.setAttribute("tabindex","0");r.setAttribute("role","button");
+  r.setAttribute("aria-label",h[6]+": show explanation");
+  r.addEventListener("click",function(){showInfo(h[1],r)});
+  r.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();showInfo(h[1],r)}});
+  document.getElementById(h[0]).parentNode.appendChild(r);
+  h.push(r);
+});
+document.getElementById("infoX").addEventListener("click",function(){
+  document.getElementById("info").hidden=true;
+  HOT.forEach(function(h){h[7].classList.remove("sel")});
+});
+/* ---------- Simulation engine (Stage 2) ----------
+   A circuit is data: inputs plus rungs. Each rung has a coil name and a logic tree:
+   ["no",x] contact closed when x is on, ["nc",x] closed when x is off,
+   ["and",...] series contacts, ["or",...] parallel branches.
+   type:"ton" makes the coil an on-delay timer (delay in seconds). */
+function Engine(spec){
+  var me=this; this.spec=spec; this.s={}; this.acc={}; this.en={};
+  (spec.inputs||[]).forEach(function(n){me.s[n]=false});
+  spec.rungs.forEach(function(r){me.s[r.coil]=false; if(r.type==="ton"){me.acc[r.coil]=0;me.en[r.coil]=false}});
+}
+Engine.prototype.ev=function(x){
+  var me=this,op=x[0];
+  if(op==="no") return !!this.s[x[1]];
+  if(op==="nc") return !this.s[x[1]];
+  var a=x.slice(1).map(function(y){return me.ev(y)});
+  return op==="and"?a.every(Boolean):a.some(Boolean);
+};
+Engine.prototype.set=function(n,v){this.s[n]=!!v};
+Engine.prototype.solve=function(){
+  for(var i=0;i<20;i++){
+    var changed=false;
+    for(var j=0;j<this.spec.rungs.length;j++){
+      var r=this.spec.rungs[j], e=this.ev(r.logic), v=e;
+      if(r.type==="ton"){ this.en[r.coil]=e; if(!e) this.acc[r.coil]=0; v=e&&this.acc[r.coil]>=r.delay; }
+      if(this.s[r.coil]!==v){this.s[r.coil]=v;changed=true}
+    }
+    if(!changed) return true;
+  }
+  return false; // never settled: the circuit oscillates
+};
+Engine.prototype.tick=function(dt){
+  this.solve();
+  for(var j=0;j<this.spec.rungs.length;j++){
+    var r=this.spec.rungs[j];
+    if(r.type==="ton"&&this.en[r.coil]) this.acc[r.coil]+=dt;
+  }
+  return this.solve();
+};
+
+
+=v.indexOf("quiz")===0?v.slice(4):v;
+    if(a.d/* ---------- Fault finding ---------- */
+var FN={X0:"Start",X1:"Stop",X2:"Overload",X3:"Rev",Y0:"K1",Y1:"R"};
+function one(slots){return [{slots:slots,coil:"Y0"}]}
+var SC=[
+ {t:"Drops out on release",s:"The motor runs while you hold Start, but stops the moment you let go.",h:"What keeps the coil on once your finger leaves Start?",ins:["X0","X1","X2"],outs:["Y0"],
+  prog:one([cc("nc","X1"),cc("nc","X2"),cc("no","X0")]),
+  o:["The Stop button is wired normally open","The seal-in contact is missing","The overload contact is open","The coil is burnt out"],a:1,
+  w:"With no K1 auxiliary contact in parallel with Start, nothing holds the coil on after the button is released. A burnt coil would never pull in at all."},
+ {t:"Will not start",s:"Pressing Start does nothing. Now try holding Start and Stop together.",h:"Which contact is open while nothing is pressed?",ins:["X0","X1","X2"],outs:["Y0"],
+  prog:one([cc("no","X1"),cc("nc","X2"),{par:[cc("no","X0"),cc("no","Y0")]}]),
+  o:["The Stop button is wired normally open instead of normally closed","The seal-in contact is wired in series with Start","The overload relay has tripped","The coil is open circuit"],a:0,
+  w:"A normally open Stop leaves the circuit broken until it is pressed, so the motor only starts while Stop is held, which is the opposite of its job. A series seal-in (Fault 4) looks similar, but holding Stop would not help there."},
+ {t:"Starts only when tripped",s:"Start does nothing. Strangely, the motor will run if you trip the overload first.",h:"What should an overload contact do when the relay trips?",ins:["X0","X1","X2"],outs:["Y0"],
+  prog:one([cc("nc","X1"),cc("no","X2"),{par:[cc("no","X0"),cc("no","Y0")]}]),
+  o:["The Stop button is stuck closed","The overload contact is wired normally open instead of normally closed","The seal-in contact is missing","The supply fuse has blown"],a:1,
+  w:"The overload contact must be normally closed so that a trip opens the circuit. Wired normally open, it closes on a trip, so the motor can only run when the overload has tripped."},
+ {t:"Never starts",s:"Start does nothing, whatever you press. Holding Start and Stop together changes nothing either.",h:"Can K1\u2019s own contact close before K1 is on?",ins:["X0","X1","X2"],outs:["Y0"],
+  prog:one([cc("nc","X1"),cc("nc","X2"),cc("no","X0"),cc("no","Y0")]),
+  o:["The Stop button is wired normally open","The coil is the wrong voltage","The overload relay needs resetting","The seal-in contact is wired in series with Start instead of in parallel"],a:3,
+  w:"K1\u2019s contact can only close once K1 is on, but K1 can only come on if that contact is already closed. It must sit in parallel with Start."},
+ {t:"Will not stop",s:"The motor starts and holds fine, but the Stop button does nothing.",h:"Press Stop while it runs and look at which contacts change in the coil path.",ins:["X0","X1","X2"],outs:["Y0"],
+  prog:one([cc("nc","X2"),{par:[cc("no","X0"),cc("no","Y0")]}]),
+  o:["The coil is shorted","The overload contact is welded shut","The Start button is stuck closed","The Stop button is not in the circuit, as if it has been bridged out"],a:3,
+  w:"There is no Stop contact in series with the coil, so nothing opens when Stop is pressed and the seal-in keeps the coil on. A welded overload contact would not stop the motor either, but here a trip does stop it."},
+ {t:"Both contactors close",s:"Press Fwd, release it, then press Rev. Both contactors pull in. In a real panel that would short the supply.",h:"What stops one contactor closing while the other is on?",ins:["X0","X3","X1","X2"],outs:["Y0","Y1"],nm:{X0:"Fwd",Y0:"F"},
+  prog:[{slots:[cc("nc","X1"),cc("nc","X2"),{par:[cc("no","X0"),cc("no","Y0")]}],coil:"Y0"},{slots:[cc("nc","X1"),cc("nc","X2"),{par:[cc("no","X3"),cc("no","Y1")]}],coil:"Y1"}],
+  o:["The Stop button is wired normally open","The normally closed interlock contacts are missing","The overload relay is faulty","The seal-in contacts are missing"],a:1,
+  w:"Each rung should have a normally closed contact of the other contactor in series. Without them nothing prevents F and R from closing together."}
+];
+var FI=0, FIN={X0:false,X1:false,X2:false,X3:false}, FST={}, FTA={}, FUI=[];
+function fnm(a){var s=SC[FI];return (s.nm&&s.nm[a])||FN[a]}
+function fEl(c){return '<div class="el"><span class="sm">'+(c.k==="no"?"NO":"NC")+'</span><b class="fn">'+fnm(c.a)+'</b></div>'}
+function fBuild(){
+  var h="";
+  SC[FI].prog.forEach(function(r){
+    h+='<div class="rung"><div class="rline"><span class="rail"></span>';
+    r.slots.forEach(function(sl){h+='<span class="wire"></span>'+(sl.par?'<div class="par">'+fEl(sl.par[0])+fEl(sl.par[1])+'</div>':fEl(sl))});
+    h+='<span class="wire"></span><div class="el coil"><b class="cs">( )</b><b class="fn">'+fnm(r.coil)+'</b></div><span class="rail"></span></div></div>';
+  });
+  var box=document.getElementById("fRungs"); box.innerHTML=h;
+  FUI=[].map.call(box.querySelectorAll(".rung"),function(ru){
+    var line=ru.querySelector(".rline");
+    return {wires:line.querySelectorAll(":scope>.wire"),
+      slots:[].map.call(line.querySelectorAll(":scope>.el:not(.coil), :scope>.par"),function(n){return n.classList.contains("par")?{els:n.querySelectorAll(".el")}:{el:n}}),
+      coil:line.querySelector(".coil")};
+  });
+}
+function fPaint(snap){
+  var s=SC[FI];
+  FUI.forEach(function(u,i){
+    var sn=snap&&snap[i], len=u.slots.length;
+    u.slots.forEach(function(sl,j){
+      var d=sn&&sn.sn[j];
+      if(sl.els){sl.els[0].classList.toggle("live",!!(d&&d.a));sl.els[1].classList.toggle("live",!!(d&&d.b))}
+      else sl.el.classList.toggle("live",!!(d&&d.out));
+    });
+    u.wires.forEach(function(w,j){w.classList.toggle("live",!!sn&&(j<len?(j===0||sn.sn[j-1].out):sn.out))});
+    u.coil.classList.toggle("live",!!(sn&&sn.out));
+  });
+  [].forEach.call(document.querySelectorAll("#fIn [data-x]"),function(b){var on=!!FIN[b.dataset.x];b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)});
+  s.outs.forEach(function(y){document.getElementById("fo"+y).classList.toggle("on",!!FST[y])});
+  var all=s.outs.every(function(y){return FST[y]});
+  document.getElementById("fStatus").textContent=s.outs.map(function(y){return fnm(y)+" "+(FST[y]?"ON":"off")}).join(" \u00b7 ")+(s.outs.length>1&&all?" \u00b7 Both on: that would short the supply!":"");
+}
+function fNavDraw(){
+  PG.f=PG.f||[];
+  document.getElementById("fNav").innerHTML=SC.map(function(x,i){return '<button type="button" class="chip'+(i===FI?" on":"")+'" data-i="'+i+'" aria-label="Fault '+(i+1)+'">'+(i+1)+(PG.f.indexOf(i)>=0?" \u2713":"")+'</button>'}).join("");
+}
+var fSnap=null;
+function fGo(i){
+  FI=i; var s=SC[i];
+  FIN={X0:false,X1:false,X2:false,X3:false}; FST={}; FTA={}; fSnap=null;
+  document.getElementById("fTitle").textContent="Fault "+(i+1)+" of "+SC.length+": "+s.t;
+  document.getElementById("fSym").textContent=s.s;
+  document.getElementById("fOpts").innerHTML=s.o.map(function(o,j){return '<button type="button" class="qo" data-o="'+j+'">'+o+'</button>'}).join("");
+  ["fWhy","fHintT","fNext"].forEach(function(id){document.getElementById(id).hidden=true});
+  document.getElementById("fHint").textContent="Show hint";
+  var ih="",oh="";
+  s.ins.forEach(function(x){ih+='<button type="button" class="chip" data-x="'+x+'" aria-pressed="false">'+(x==="X2"?"Trip overload":"Press "+fnm(x))+'</button>'});
+  s.outs.forEach(function(y){oh+='<span class="ind" id="fo'+y+'">'+fnm(y)+' contactor</span>'});
+  document.getElementById("fIn").innerHTML=ih; document.getElementById("fOut").innerHTML=oh;
+  fBuild(); fNavDraw(); fPaint(null);
+}
+var fin=document.getElementById("fIn");
+fin.addEventListener("pointerdown",function(e){
+  var b=e.target.closest("[data-x]"); if(!b) return; e.preventDefault();
+  var x=b.dataset.x; if(x==="X2") FIN.X2=!FIN.X2; else FIN[x]=true;
+  fSnap=plcRun(SC[FI].prog,FST,FTA,FIN); fPaint(fSnap);
+});
+function fRel(e){var b=e.target.closest("[data-x]");if(b&&b.dataset.x!=="X2"&&FIN[b.dataset.x]){FIN[b.dataset.x]=false;fPaint(fSnap)}}
+["pointerup","pointercancel","pointerout"].forEach(function(t){fin.addEventListener(t,fRel)});
+fin.addEventListener("keydown",function(e){var b=e.target.closest("[data-x]");if(b&&(e.key===" "||e.key==="Enter")&&!e.repeat){e.preventDefault();var x=b.dataset.x;if(x==="X2")FIN.X2=!FIN.X2;else FIN[x]=true;fPaint(fSnap)}});
+fin.addEventListener("keyup",function(e){var b=e.target.closest("[data-x]");if(b&&(e.key===" "||e.key==="Enter")&&b.dataset.x!=="X2"){FIN[b.dataset.x]=false;fPaint(fSnap)}});
+document.getElementById("fNav").addEventListener("click",function(e){var b=e.target.closest("[data-i]");if(b)fGo(+b.dataset.i)});
+document.getElementById("fNext").addEventListener("click",function(){fGo(FI+1);window.scrollTo(0,0)});
+document.getElementById("fHint").addEventListener("click",function(){
+  var t=document.getElementById("fHintT"); t.textContent=SC[FI].h; t.hidden=!t.hidden;
+  this.textContent=t.hidden?"Show hint":"Hide hint";
+});
+document.getElementById("fOpts").addEventListener("click",function(e){
+  var b=e.target.closest(".qo"); if(!b||b.disabled) return;
+  var s=SC[FI], j=+b.dataset.o, w=document.getElementById("fWhy");
+  if(j===s.a){
+    [].forEach.call(document.querySelectorAll("#fOpts .qo"),function(x){x.disabled=true});
+    b.classList.add("right");
+    PG.f=PG.f||[]; if(PG.f.indexOf(FI)<0){PG.f.push(FI);pgSave()}
+    pgShow(); fNavDraw();
+    w.textContent="Correct. "+s.w+(PG.f.length>=SC.length?" You have solved all "+SC.length+" faults.":""); w.hidden=false;
+    document.getElementById("fNext").hidden=FI>=SC.length-1;
+  }else{
+    b.classList.add("wrong"); b.disabled=true;
+    w.textContent="Not quite. Operate the circuit again and compare what it does with each suspect."; w.hidden=false;
+  }
+});
+setInterval(function(){
+  if(!document.getElementById("v-faults").classList.contains("active")) return;
+  fSnap=plcRun(SC[FI].prog,FST,FTA,FIN); fPaint(fSnap);
+},100);
+document.querySelector("nav").insertAdjacentHTML("beforeend",'<a href="#faults" data-v="faults">Faults</a>');
+document.querySelector("#v-home .grid").insertAdjacentHTML("beforeend",'<a class="card" href="#faults"><h3>Fault finding</h3><p>Each circuit has a hidden wiring error. Operate it, diagnose it and say what is wrong.</p><span class="tag next">Ready</span></a>');
+function fgShow(){
+  PG.f=PG.f||[]; var m=PG.f.length, t=document.querySelector('.card[href="#faults"] .tag');
+  t.textContent=m>=SC.length?"All solved":m+" of "+SC.length+" solved"; t.classList.toggle("done",m>=SC.length); t.classList.toggle("next",m<SC.length);
+}
+var _pg=pgShow;
+pgShow=function(){_pg();fgShow();document.getElementById("pgTxt").textContent+=" \u00b7 "+PG.f.length+" of "+SC.length+" faults solved"};
+fGo(0); pgShow(); route();
+TESTS.push(
+  ["Fault 1: the motor drops out when Start is released",function(){var s={},t={},i={X0:true,X1:false,X2:false,X3:false},p=SC[0].prog;runP(p,s,t,i,1);var a=s.Y0===true;i.X0=false;runP(p,s,t,i,1);return a&&s.Y0===false}],
+  ["Fau/* ---------- Forward-reverse module (Stage 5) ---------- */
+function frSpec(){
+  function r(c,o,b){return {coil:c,logic:["and",["nc","ol"],["nc","stop"],["nc",o],["or",["no",b],["no",c]]]}}
+  return {inputs:["fwd","rev","stop","ol"],rungs:[r("F","R","fwd"),r("R","F","rev")]};
+}
+var FR={fwd:false,rev:false,stop:false,ol:false}, feng=new Engine(frSpec());
+var fcw=[], fsym="";
+function rung(p,a,btn,lbl,oth){
+  var b=a+38;
+  function d(x,y){return '<circle class="dot" cx="'+x+'" cy="'+y+'" r="3.5"/>'}
+  function ln(id,x1,y1,x2,y2){return '<line id="'+id+p+'" class="sym" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"/>'}
+  function tx(x,y,t){return '<text class="lbl" x="'+x+'" y="'+y+'">'+t+'</text>'}
+  fsym+=d(40,a)+d(70,a)+ln("stp",40,a,70,a)+tx(38,a-24,"Stop")
+    +d(85,a)+d(115,a)+ln("olp",85,a,115,a)+tx(88,a-24,"OL")
+    +d(145,a)+d(175,a)+ln("sta",145,a,173,a-12)+tx(145,a-24,lbl)
+    +d(145,b)+d(175,b)+ln("aux",145,b,173,b-12)+tx(140,b+16,p+" aux (NO)")
+    +d(205,a)+d(235,a)+ln("ilk",205,a,235,a)+tx(196,a+22,oth+" aux (NC)")
+    +'<circle id="c'+p+'" class="coil" cx="290" cy="'+a+'" r="16"/><text class="coiltxt" x="290" y="'+(a+5)+'" text-anchor="middle">'+p+'</text>';
+  var K=function(){return feng.s[p]}, A=function(){return !FR.stop}, B=function(){return !FR.stop&&!FR.ol}, P=function(){return FR[btn]};
+  fcw.push([14,a,40,a,ON],[70,a,85,a,A],[115,a,145,a,B],[128,a,128,b,B],[128,b,145,b,B],
+    [175,a,190,a,function(){return B()&&P()}],[175,b,190,b,function(){return B()&&K()}],[190,b,190,a,function(){return B()&&K()}],
+    [190,a,205,a,function(){return B()&&(P()||K())}],[235,a,265,a,K],[306,a,346,a,K]);
+}
+rung("F",50,"fwd","Fwd","R"); rung("R",150,"rev","Rev","F");
+document.getElementById("frSym").innerHTML=fsym;
+var FF=function(){return feng.s.F}, RR=function(){return feng.s.R};
+var fpw=[[70,40,290,40,FF],[70,140,290,140,FF],[70,90,290,90,function(){return FF()||RR()}],[70,40,290,140,RR],[70,140,290,40,RR]];
+mkW("frCtl",fcw); mkW("frPwr",fpw);
+function frSolve(){["fwd","rev","stop","ol"].forEach(function(k){feng.set(k,FR[k])});feng.solve()}
+function frDraw(){
+  [fcw,fpw].forEach(function(L){L.forEach(function(s){s[5].classList.toggle("on",!!s[4]())})});
+  var F=feng.s.F,R=feng.s.R;
+  ["F","R"].forEach(function(p){
+    var oth=p==="F"?"R":"F", btn=p==="F"?"fwd":"rev", a=p==="F"?50:150, b=a+38;
+    document.getElementById("c"+p).classList.toggle("on",feng.s[p]);
+    sy("stp"+p,FR.stop?a-18:a); sy("olp"+p,FR.ol?a-18:a); sy("sta"+p,FR[btn]?a:a-12);
+    sy("aux"+p,feng.s[p]?b:b-12); sy("ilk"+p,feng.s[oth]?a-16:a);
+  });
+  var fan=document.getElementById("frFan");
+  fan.classList.toggle("spin",F||R); fan.classList.toggle("rev",R);
+  document.getElementById("frPhase").textContent=F?"Forward: L1→U  L2→V  L3→W":R?"Reverse: L3→U  L2→V  L1→W":"Stopped";
+  var blocked=(FR.fwd&&R)||(FR.rev&&F);
+  document.getElementById("frStatus").textContent=blocked
+    ? "Interlock! The other contactor’s auxiliary contact is open, so this coil cannot energize. Press Stop first."
+    : FR.ol ? "Overload tripped. Both contactors are off. Reset it, then choose a direction."
+    : F ? "Forward. F is closed: L1→U, L2→V, L3→W."
+    : R ? "Reverse. R is closed and two phases are swapped: L3→U, L2→V, L1→W."
+    : "Stopped. Press Fwd or Rev.";
+  document.getElementById("frOl").textContent=FR.ol?"Reset overload":"Trip overload";
+}
+function fHold(id,key){
+  var b=document.getElementById(id);
+  function dn(e){e.preventDefault();FR[key]=true;b.classList.add("down");frSolve();frDraw()}
+  function up(){if(!FR[key])return;FR[key]=false;b.classList.remove("down");frSolve();frDraw()}
+  b.addEventListener("pointerdown",dn);
+  ["pointerup","pointerleave","pointercancel"].forEach(function(t){b.addEventListener(t,up)});
+  b.addEventListener("keydown",function(e){if((e.key===" "||e.key==="Enter")&&!e.repeat)dn(e)});
+  b.addEventListener("keyup",function(e){if(e.key===" "||e.key==="Enter")up()});
+}
+fHold("frFwd","fwd"); fHold("frRev","rev"); fHold("frStop","stop");
+document.getElementById("frOl").addEventListener("click",function(){FR.ol=!FR.ol;frSolve();frDraw()});
+frSolve(); frDraw();
+
+lt 4: the circuit can never start",function(){var s={},t={},i={X0:true,X1:false,X2:false,X3:false};runP(SC[3].prog,s,t,i,5);return !s.Y0}],
+  ["Fault 6: both contactors can close together",function(){var s={},t={},i={X0:true,X1:false,X2:false,X3:false},p=SC[5].prog;runP(p,s,t,i,1);i.X0=false;i.X3=true;runP(p,s,t,i,2);return s.Y0===true&&s.Y1===true}]
+);/* ---------- Seal-in demo (now driven by the engine) ---------- */
+var S={start:false,stop:false,K:false,coil:false};
+var eng=new Engine(dolSpec());
+function solve(){
+  eng.set("start",S.start); eng.set("stop",S.stop); eng.solve();
+  S.coil=S.K=eng.s.K1;
+}
+var NS="http://www.w3.org/2000/svg", segs=[
+  // [x1,y1,x2,y2, live condition]
+  [14,60,50,60,function(){return true}],
+  [90,60,125,60,function(){return !S.stop}],
+  [125,60,140,60,function(){return !S.stop}],
+  [180,60,195,60,function(){return !S.stop&&S.start}],
+  [125,60,125,120,function(){return !S.stop}],
+  [125,120,140,120,function(){return !S.stop}],
+  [180,120,195,120,function(){return !S.stop&&S.K}],
+  [195,120,195,60,function(){return !S.stop&&S.K}],
+  [195,60,245,60,function(){return S.coil}],
+  [285,60,346,60,function(){return S.coil}]
+], wg=document.getElementById("wires");
+segs.forEach(function(s){
+  var l=document.createElementNS(NS,"line");
+  l.setAttribute("x1",s[0]);l.setAttribute("y1",s[1]);l.setAttribute("x2",s[2]);l.setAttribute("y2",s[3]);
+  l.setAttribute("class","w");s.push(l);wg.appendChild(l);
+});
+// link between Stop and start branch (wire under stop symbol counts as live when closed)
+function draw(){
+  segs.forEach(function(s){s[5].classList.toggle("on",!!s[4]())});
+  document.getElementById("coil").classList.toggle("on",S.coil);
+  var st=document.getElementById("stopSym");
+  st.setAttribute("y2",S.stop?42:60); st.setAttribute("class","sym");
+  var sa=document.getElementById("startSym");
+  sa.setAttribute("y2",S.start?60:46);
+  var k=document.getElementById("kSym");
+  k.setAttribute("y2",S.K?120:106);
+  var c=document.getElementById("cap");
+  c.textContent=S.coil
+    ? (S.start?"Start is pressed and the coil is on.":"Start is released, but the K1 contact closed and keeps the coil on. This is the seal-in.")
+    : (S.stop?"Stop opens the circuit. The coil drops out and K1 opens.":"Hold Start. The coil energizes.");
+}
+function hold(id,key){
+  var b=document.getElementById(id);
+  function dn(e){e.preventDefault();S[key]=true;b.classList.add("down");solve();draw()}
+  function up(){if(!S[key])return;S[key]=false;b.classList.remove("down");solve();draw()}
+  b.addEventListener("pointerdown",dn);
+  ["pointerup","pointerleave","pointercancel"].forEach(function(t){b.addEventListener(t,up)});
+  b.addEventListener("keydown",function(e){if((e.key===" "||e.key==="Enter")&&!e.repeat)dn(e)});
+  b.addEventListener("keyup",function(e){if(e.key===" "||e.key==="Enter")up()});
+}
+hold("bStart","start"); hold("bStop","stop"); solve(); draw();
+
+
+ataset.v===nv) /* ---------- Stage 8: quizzes, progress, explainers ---------- */
+var PG={}; try{PG=JSON.parse(localStorage.getItem("mcl")||"{}")}catch(err){}
+function pgSave(){try{localStorage.setItem("mcl",JSON.stringify(PG))}catch(err){}}
+var MODS={dol:"DOL starter",fwdrev:"Forward-reverse control",stardelta:"Star-delta starter",plc:"PLC ladder logic"};
+var QUIZ={
+ dol:[
+  {q:"What keeps the contactor energized after you release the Start button?",o:["The Stop button","The overload relay","K1\u2019s auxiliary (seal-in) contact","The motor itself"],a:2,w:"The auxiliary contact is wired in parallel with Start. Once K1 pulls in, that contact closes and holds the coil on."},
+  {q:"Why is the Stop button wired as normally closed?",o:["It uses less current","It is cheaper","So it can double as a Start button","A broken wire also stops the motor, which is the safe failure"],a:3,w:"With a normally closed Stop, losing the wire has the same effect as pressing the button."},
+  {q:"What does the thermal overload relay protect against?",o:["A slow, sustained overcurrent such as a jammed load","Short circuits","Low supply voltage","Wrong direction of rotation"],a:0,w:"Short circuits are the MCB\u2019s job. The overload relay reacts to current that is too high for too long."}
+ ],
+ fwdrev:[
+  {q:"How do you reverse a three-phase motor?",o:["Swap any two of the three phases","Swap the neutral and earth","Lower the voltage","Reverse the control wiring"],a:0,w:"Swapping two phases reverses the rotating field, so the rotor turns the other way."},
+  {q:"What does the interlock contact do?",o:["Stops the motor on overload","Holds the coil on","Speeds up the contactor","Blocks the other contactor while this one is closed"],a:3,w:"Each rung has a normally closed contact of the other contactor, so only one direction can be closed at a time."},
+  {q:"What would happen if F and R closed together?",o:["The motor would run faster","Nothing would happen","Two phases would be shorted together","The motor would reverse slowly"],a:2,w:"F and R connect the same phases in a different order, so closing both would short the supply."}
+ ],
+ stardelta:[
+  {q:"Why start a motor in star?",o:["It makes the motor run faster","It reduces the starting current","It reverses the motor","It saves cable"],a:1,w:"Each winding sees about 58% of the line voltage, so the line current is about one third of a direct start."},
+  {q:"What does the timer do?",o:["It reverses the motor","It trips the overload","It switches from star to delta after a set delay","It opens the MCB"],a:2,w:"When the delay ends, its contacts drop out K3 and bring in K2."},
+  {q:"Why do K3 and K2 have normally closed contacts in each other\u2019s rungs?",o:["So they can never close together and short the supply","To make the motor quieter","To count time","To reset the overload"],a:0,w:"Star and delta connect the windings differently, so both closed at once would be a short circuit."}
+ ],
+ plc:[
+  {q:"What is the order of a PLC scan?",o:["Update outputs, read inputs, solve rungs","Read inputs, solve rungs top to bottom, update outputs","Solve rungs bottom to top, then read inputs","Rungs are solved at random"],a:1,w:"The PLC reads the inputs, solves the rungs from top to bottom, writes the outputs, then repeats."},
+  {q:"Which contact passes power when its address is OFF?",o:["NO","NC","Both","Neither"],a:1,w:"A normally closed (examine if off) contact passes power while its address is off."},
+  {q:"A parallel branch of Start and the motor\u2019s own output creates what?",o:["A timer","An interlock","A seal-in","A reset"],a:2,w:"The output holds itself on through its own contact, exactly like the K1 auxiliary contact."}
+ ]
+};
+function pgShow(){
+  var n=0;
+  Object.keys(MODS).forEach(function(k){
+    var t=document.querySelector('.card[href="#'+k+'"] .tag'), done=PG[k]>=2;
+    if(done) n++;
+    t.textContent=done?"Quiz passed":"Ready"; t.classList.toggle("done",done); t.classList.toggle("next",!done);
+  });
+  document.getElementById("pgTxt").textContent="Progress: "+n+" of 4 quizzes passed";
+  document.getElementById("pgFill").style.width=(n*25)+"%";
+}
+document.querySelector("#v-home .grid").insertAdjacentHTML("beforebegin",'<p class="hint" id="pgTxt"></p><div class="meter" aria-hidden="true"><div id="pgFill"></div></div>');
+function quizBuild(m){
+  var sec=document.getElementById("v-quiz"+m), qs=QUIZ[m], score=0, done=0;
+  function draw(){
+    score=0; done=0;
+    var h='<h1>'+MODS[m]+' quiz</h1><p class="lede">Pick an answer for each question. You pass with 2 out of '+qs.length+'.</p>';
+    qs.forEach(function(q,i){
+      h+='<div class="qq"><h3>'+(i+1)+'. '+q.q+'</h3>';
+      q.o.forEach(function(o,j){h+='<button type="button" class="qo" data-q="'+i+'" data-o="'+j+'">'+o+'</button>'});
+      h+='<p class="why" hidden></p></div>';
+    });
+    h+='<div id="res'+m+'"></div><p><a href="#'+m+'">Back to the module</a></p>';
+    sec.innerHTML=h;
+  }
+  sec.addEventListener("click",function(e){
+    var b=e.target.closest(".qo");
+    if(b&&!b.disabled){
+      var qi=+b.dataset.q, oi=+b.dataset.o, q=qs[qi], box=b.parentNode, ok=oi===q.a;
+      [].forEach.call(box.querySelectorAll(".qo"),function(x){x.disabled=true;if(+x.dataset.o===q.a)x.classList.add("right")});
+      if(!ok) b.classList.add("wrong");
+      var w=box.querySelector(".why"); w.textContent=(ok?"Correct. ":"Not quite. ")+q.w; w.hidden=false;
+      if(ok) score++; done++;
+      if(done===qs.length){
+        PG[m]=Math.max(PG[m]||0,score); pgSave(); pgShow();
+        document.getElementById("res"+m).innerHTML='<p class="score">'+score+' out of '+qs.length+(score>=2?" \u00b7 Passed":" \u00b7 Try again")+'</p><button type="button" class="runbtn" data-retry="1">Retry quiz</button>';
+      }
+    }
+    if(e.target.closest("[data-retry]")){draw();window.scrollTo(0,0)}
+  });
+  draw();
+}
+Object.keys(MODS).forEach(function(k){
+  var sec=document.getElementById("v-"+k), p=document.createElement("p");
+  p.className="sub"; p.innerHTML='<a class="runbtn linkbtn" href="#quiz'+k+'">Take the quiz</a>';
+  sec.insertBefore(p,sec.querySelector(".dock"));
+  quizBuild(k);
+});
+pgShow();
+
+function explain(sec,list,data){
+  var root=document.getElementById("v-"+sec), dock=root.querySelector(".dock"), box=document.createElement("div"), rs=[];
+  box.className="info"; box.hidden=true;
+  box.innerHTML='<button type="button" class="x" aria-label="Close explanation">Close</button><h3></h3><p></p><p></p>';
+  dock.insertBefore(box,dock.firstChild);
+  root.querySelector(".pair").insertAdjacentHTML("beforebegin",'<p class="hint">Tap any component in either diagram to see what it is and why it is there.</p>');
+  function show(k,r){
+    var d=data[k]; box.children[1].textContent=d.t; box.children[2].textContent=d.w; box.children[3].textContent="In this circuit: "+d.c;
+    box.hidden=false; rs.forEach(function(x){x.classList.toggle("sel",x===r)});
+  }
+  box.children[0].addEventListener("click",function(){box.hidden=true;rs.forEach(function(x){x.classList.remove("sel")})});
+  list.forEach(function(h){
+    var r=document.createElementNS(NS,"rect");
+    r.setAttribute("x",h[2]);r.setAttribute("y",h[3]);r.setAttribute("width",h[4]);r.setAttribute("height",h[5]);
+    r.setAttribute("class","hot");r.setAttribute("tabindex","0");r.setAttribute("role","button");
+    r.setAttribute("aria-label",h[6]+": show explanation");
+    r.addEventListener("click",function(){show(h[1],r)});
+    r.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();show(h[1],r)}});
+    document.getElementById(h[0]).parentNode.appendChild(r); rs.push(r);
+  });
+}
+var FH=[];
+[50,150].forEach(function(a){
+  var b=a+38;
+  FH.push(["frCtl","stop",36,a-14,38,28,"Stop push button"],["frCtl","ol",81,a-14,38,28,"Overload contact"],["frCtl","start",141,a-14,38,28,"Direction push button"],["frCtl","aux",141,b-14,38,28,"Auxiliary contact"],["frCtl","ilk",201,a-14,38,28,"Interlock contact"],["frCtl","coil",272,a-18,36,36,"Contactor coil"]);
+});
+FH.push(["frPwr","swap",60,30,240,120,"Phase connections"],["frPwr","motor",150,212,60,56,"Motor"]);
+explain("fwdrev",FH,{
+  stop:{t:"Stop push button (normally closed)",w:"Opens the circuit while pressed.",c:"It is shared by both rungs, so one press drops out whichever contactor is closed. It also has to be pressed before changing direction."},
+  ol:{t:"Overload contact (normally closed)",w:"The auxiliary contact of the thermal overload relay.",c:"It opens when the relay trips and cuts power to both coils."},
+  start:{t:"Fwd or Rev push button (normally open)",w:"Closes only while you hold it.",c:"It gives the coil its first push of current. The coil\u2019s own auxiliary contact then holds it on."},
+  aux:{t:"Auxiliary contact (seal-in)",w:"A small contact that moves with the contactor.",c:"It is wired in parallel with the direction button, so the coil stays on after you release the button."},
+  ilk:{t:"Interlock contact (normally closed)",w:"A contact of the opposite contactor, wired in series with this coil.",c:"While F is closed, its contact opens the Rev rung, and the other way round. Many starters add a mechanical interlock between the two contactors as well."},
+  coil:{t:"Contactor coil (F or R)",w:"An electromagnet that closes its contactor\u2019s main contacts when energized.",c:"F connects L1, L2, L3 to U, V, W. R swaps L1 and L3."},
+  swap:{t:"Phase connections",w:"A three-phase motor turns the way its magnetic field rotates, and the field direction depends on the phase order.",c:"Forward uses the straight lines. Reverse uses the crossed lines, which swap L1 and L3 and so reverse the field. L2 stays where it is."},
+  motor:{t:"Three-phase motor",w:"Turns one way or the other depending on the phase order.",c:"The fan turns clockwise for Forward and the other way for Reverse."}
+});
+var SH=[["sdCtl","k1",275,26,50,28,"K1 coil"],["sdCtl","k3",275,114,50,28,"K3 coil"],["sdCtl","k2",275,170,50,28,"K2 coil"],["sdCtl","t1",275,254,50,28,"T1 timer coil"],
+ ["sdCtl","t1c",176,112,38,32,"T1 contact"],["sdCtl","t1c",176,168,38,32,"T1 contact"],["sdCtl","ilk",106,112,38,32,"Interlock contact"],["sdCtl","ilk",106,168,38,32,"Interlock contact"],
+ ["sdPwr","wind",30,120,160,150,"Motor windings"]];
+explain("stardelta",SH,{
+  k1:{t:"K1 line contactor",w:"Connects the supply to one end of each motor winding.",c:"It closes at Start and stays closed through both star and delta. Its auxiliary contacts feed the other rungs."},
+  k3:{t:"K3 star contactor",w:"Joins the other ends of the three windings together, which makes the star point.",c:"It is closed only during starting. When the timer ends it drops out."},
+  k2:{t:"K2 delta contactor",w:"Connects the windings end to end in a triangle, so each winding gets the full line voltage.",c:"It closes after the timer ends and then holds itself on with its own auxiliary contact."},
+  t1:{t:"T1 on-delay timer",w:"Starts counting when its coil gets power and switches its contacts when the set time ends.",c:"It counts 5 seconds, which is meant to be long enough for the motor to speed up in star. Real starters set this to match the motor and load."},
+  t1c:{t:"T1 time-delay contacts",w:"Contacts that change state only after the timer has finished counting.",c:"The normally closed one opens the K3 rung at timeout. The normally open one closes the K2 rung at the same moment."},
+  ilk:{t:"Interlock contact (normally closed)",w:"A contact of the opposite contactor, wired in series with this coil.",c:"K3 can only close if K2 is open, and K2 can only close if K3 is open, so the two can never be closed together."},
+  wind:{t:"Motor windings",w:"The three windings can be connected as a Y (star) or as a triangle (delta).",c:"In star each winding sees about 58% of the line voltage, which cuts starting current and torque to about one third. In delta each winding gets full voltage for normal running."}
+});
+
+a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
+  });/* ---------- PLC ladder module (Stage 7) ---------- */
+var INS={X0:"Start",X1:"Stop",X2:"Sensor",X3:"Aux"}, OUTS={Y0:"Motor",Y1:"Lamp",Y2:"Horn",M0:"Memory",T0:"Timer"};
+var CONT=["X0","X1","X2","X3","Y0","Y1","Y2","M0","T0"], COILS=["Y0","Y1","Y2","M0","T0"];
+function cc(k,a){return {k:k,a:a}}
+function P1(){return [{slots:[cc("nc","X1"),{par:[cc("no","X0"),cc("no","Y0")]}],coil:"Y0"},{slots:[cc("no","Y0")],coil:"Y1"}]}
+function P2(){return [{slots:[cc("nc","X1"),cc("nc","Y1"),{par:[cc("no","X0"),cc("no","Y0")]}],coil:"Y0"},{slots:[cc("nc","X1"),cc("nc","Y0"),{par:[cc("no","X3"),cc("no","Y1")]}],coil:"Y1"}]}
+function P3(){return [{slots:[cc("no","X0")],coil:"T0"},{slots:[cc("no","T0")],coil:"Y0"},{slots:[cc("no","X0"),cc("nc","T0")],coil:"Y1"}]}
+/* one scan: read inputs, solve rungs top to bottom, write outputs */
+function plcRun(prog,st,ta,inp){
+  var cl=function(c){var v=!!st[c.a];return c.k==="nc"?!v:v};
+  Object.keys(inp).forEach(function(n){st[n]=inp[n]});
+  return prog.map(function(r){
+    var live=true, sn=[];
+    r.slots.forEach(function(sl){
+      if(sl.par){var a=live&&cl(sl.par[0]), b=live&&cl(sl.par[1]); live=a||b; sn.push({a:a,b:b,out:live})}
+      else{live=live&&cl(sl); sn.push({out:live})}
+    });
+    if(!r.slots.length) live=false;
+    if(r.coil==="T0"){ta.T0=live?(ta.T0||0)+1:0; st.T0=live&&ta.T0>=30}
+    else st[r.coil]=live;
+    return {sn:sn,out:live};
+  });
+}
+var PROG=P1(), ST={}, TA={}, IN={X0:false,X1:false,X2:false,X3:false}, SNAP=null, scanN=0, RUN=true, UI=[];
+function opt(list,sel){return list.map(function(a){return '<option'+(a===sel?' selected':'')+'>'+a+'</option>'}).join("")}
+function pEl(c,i,j,b){
+  var at='data-r="'+i+'" data-s="'+j+'" data-b="'+b+'"';
+  return '<div class="el"><select '+at+' data-f="k" aria-label="Contact type"><option value="no"'+(c.k==="no"?" selected":"")+'>NO</option><option value="nc"'+(c.k==="nc"?" selected":"")+'>NC</option></select><select '+at+' data-f="a" aria-label="Address">'+opt(CONT,c.a)+'</select></div>';
+}
+function pBuild(){
+  var box=document.getElementById("rungs"), h="";
+  PROG.forEach(function(r,i){
+    h+='<div class="rung"><div class="rnum">Rung '+(i+1)+'</div><div class="rline"><span class="rail"></span>';
+    r.slots.forEach(function(sl,j){
+      h+='<span class="wire"></span>';
+      h+=sl.par?'<div class="par">'+pEl(sl.par[0],i,j,0)+pEl(sl.par[1],i,j,1)+'</div>':pEl(sl,i,j,"");
+    });
+    h+='<span class="wire"></span><div class="el coil"><b class="cs">( )</b><select data-r="'+i+'" data-coil="1" aria-label="Output">'+opt(COILS,r.coil)+'</select>'+(r.coil==="T0"?'<span class="sm">TON 3 s</span>':'')+'</div><span class="rail"></span></div>';
+    h+='<div class="rctl"><button type="button" data-r="'+i+'" data-act="addc">+ Contact</button><button type="button" data-r="'+i+'" data-act="addp">+ Parallel</button><button type="button" data-r="'+i+'" data-act="undo">Remove last</button><button type="button" data-r="'+i+'" data-act="del">Delete rung</button></div></div>';
+  });
+  box.innerHTML=h||'<p class="hint">No rungs yet. Add one below.</p>';
+  UI=[].map.call(box.querySelectorAll(".rung"),function(ru){
+    var line=ru.querySelector(".rline");
+    return {
+      wires:line.querySelectorAll(":scope>.wire"),
+      slots:[].map.call(line.querySelectorAll(":scope>.el:not(.coil), :scope>.par"),function(n){return n.classList.contains("par")?{els:n.querySelectorAll(".el")}:{el:n}}),
+      coil:line.querySelector(".coil")
+    };
+  });
+}
+function pPaint(){
+  UI.forEach(function(u,i){
+    var sn=SNAP&&SNAP[i], len=u.slots.length;
+    u.slots.forEach(function(sl,j){
+      var d=sn&&sn.sn[j];
+      if(sl.els){sl.els[0].classList.toggle("live",!!(d&&d.a));sl.els[1].classList.toggle("live",!!(d&&d.b))}
+      else sl.el.classList.toggle("live",!!(d&&d.out));
+    });
+    u.wires.forEach(function(w,j){
+      var on=!!sn&&(j<len?(j===0||sn.sn[j-1].out):sn.out);
+      w.classList.toggle("live",on);
+    });
+    u.coil.classList.toggle("live",!!(sn&&sn.out));
+  });
+  Object.keys(INS).forEach(function(x){
+    var c=document.getElementById("pi"+x); c.classList.toggle("on",IN[x]); c.setAttribute("aria-pressed",IN[x]);
+  });
+  Object.keys(OUTS).forEach(function(y){
+    var c=document.getElementById("po"+y); c.classList.toggle("on",!!ST[y]);
+    c.textContent=y+" "+OUTS[y]+(y==="T0"?" "+((TA.T0||0)/10).toFixed(1)+"/3 s":"");
+  });
+  document.getElementById("pStatus").textContent=(RUN?"RUN":"STOPPED")+" \u00b7 scan "+scanN+". "+(RUN?"Each scan reads inputs, solves the rungs top to bottom, then updates outputs.":"Press Step to run a single scan.");
+  document.getElementById("pRun").textContent=RUN?"Stop PLC":"Run PLC";
+  document.getElementById("pStep").disabled=RUN;
+}
+function pReset(){ST={};TA={};SNAP=null;scanN=0}
+function pScan(){SNAP=plcRun(PROG,ST,TA,IN);scanN++;pPaint()}
+(function(){
+  var ih="",oh="";
+  Object.keys(INS).forEach(function(x){ih+='<button type="button" class="chip" id="pi'+x+'" data-x="'+x+'" aria-pressed="false">'+x+' '+INS[x]+'</button>'});
+  Object.keys(OUTS).forEach(function(y){oh+='<span class="ind" id="po'+y+'"></span>'});
+  document.getElementById("pIn").innerHTML=ih; document.getElementById("pOut").innerHTML=oh;
+  document.getElementById("pIn").addEventListener("click",function(e){var b=e.target.closest("[data-x]");if(b){IN[b.dataset.x]=!IN[b.dataset.x];pPaint()}});
+})();
+var rg=document.getElementById("rungs");
+rg.addEventListener("change",function(e){
+  var t=e.target, r=PROG[+t.dataset.r]; if(!r) return;
+  if(t.dataset.coil) r.coil=t.value;
+  else{var sl=r.slots[+t.dataset.s], c=t.dataset.b===""?sl:sl.par[+t.dataset.b]; c[t.dataset.f]=t.value}
+  SNAP=null; pBuild(); pPaint();
+});
+rg.addEventListener("click",function(e){
+  var b=e.target.closest("button[data-act]"); if(!b) return;
+  var i=+b.dataset.r, r=PROG[i], a=b.dataset.act;
+  if(a==="addc"&&r.slots.length<5) r.slots.push(cc("no","X0"));
+  if(a==="addp"&&r.slots.length<5) r.slots.push({par:[cc("no","X0"),cc("no","Y0")]});
+  if(a==="undo") r.slots.pop();
+  if(a==="del") PROG.splice(i,1);
+  SNAP=null; pBuild(); pPaint();
+});
+document.getElementById("pAddR").addEventListener("click",function(){
+  if(PROG.length<6){PROG.push({slots:[],coil:"Y0"});SNAP=null;pBuild();pPaint()}
+});
+document.querySelector(".exrow").addEventListener("click",function(e){
+  var b=e.target.closest("[data-ex]"); if(!b) return;
+  PROG=[[],P1,P2,P3][+b.dataset.ex]; PROG=typeof PROG==="function"?PROG():[];
+  pReset(); pBuild(); pPaint();
+});
+document.getElementById("pRun").addEventListener("click",function(){RUN=!RUN;pPaint()});
+document.getElementById("pStep").addEventListener("click",pScan);
+pBuild(); pPaint();
+setInterval(function(){
+  if(RUN&&document.getElementById("v-plc").classList.contains("active")) pScan();
+},100);
+function runP(prog,st,ta,inp,n){for(var i=0;i<n;i++)plcRun(prog,st,ta,inp)}
+TESTS.push(
+  ["PLC seal-in holds the output after Start is released",function(){var p=P1(),s={},t={},i={X0:true,X1:false};runP(p,s,t,i,1);i.X0=false;runP(p,s,t,i,1);return s.Y0===true&&s.Y1===true}],
+  ["PLC Stop (NC contact) breaks the seal-in",function(){var p=P1(),s={},t={},i={X0:true,X1:false};runP(p,s,t,i,1);i.X0=false;i.X1=true;runP(p,s,t,i,1);return s.Y0===false}],
+  ["PLC scan order: a contact above its coil sees last scan",function(){var p=[{slots:[cc("no","Y0")],coil:"Y1"},{slots:[cc("no","X0")],coil:"Y0"}],s={},t={},i={X0:true};runP(p,s,t,i,1);var a=!!s.Y1;runP(p,s,t,i,1);return a===false&&s.Y1===true}],
+  ["PLC timer turns on after 3 seconds and resets",function(){var p=P3(),s={},t={},i={X0:true};runP(p,s,t,i,29);var a=!s.Y0;runP(p,s,t,i,2);var b=s.Y0===true;i.X0=false;runP(p,s,t,i,1);return a&&b&&s.Y0===false&&s.T0===false}]
+);
+
+
+  window.scr/* ---------- Engine self-test ---------- */
+function dolSpec(){return {inputs:["start","stop","ol"],rungs:[{coil:"K1",logic:["and",["nc","ol"],["nc","stop"],["or",["no","start"],["no","K1"]]]}]}}
+function timerSpec(){var s=dolSpec();s.rungs.push({coil:"T1",type:"ton",delay:3,logic:["no","K1"]});return s}
+function interlockSpec(){
+  function r(c,other,btn){return {coil:c,logic:["and",["nc","stop"],["nc",other],["or",["no",btn],["no",c]]]}}
+  return {inputs:["fwd","rev","stop"],rungs:[r("F","R","fwd"),r("R","F","rev")]};
+}
+function press(e,n){e.set(n,1);e.solve();e.set(n,0);e.solve()}
+var TESTS=[
+  ["Start energizes the coil",function(){var e=new Engine(dolSpec());e.set("start",1);e.solve();return e.s.K1===true}],
+  ["Seal-in holds after Start is released",function(){var e=new Engine(dolSpec());press(e,"start");return e.s.K1===true}],
+  ["Stop drops the coil out",function(){var e=new Engine(dolSpec());press(e,"start");press(e,"stop");return e.s.K1===false}],
+  ["Stop wins when Start is also held",function(){var e=new Engine(dolSpec());e.set("stop",1);e.set("start",1);e.solve();return e.s.K1===false}],
+  ["Overload trip drops out and stays out after reset",function(){var e=new Engine(dolSpec());press(e,"start");e.set("ol",1);e.solve();var a=e.s.K1;e.set("ol",0);e.solve();return a===false&&e.s.K1===false}],
+  ["On-delay timer waits 3 seconds, then resets on Stop",function(){var e=new Engine(timerSpec());press(e,"start");e.tick(2);var a=e.s.T1;e.tick(1.1);var b=e.s.T1;press(e,"stop");return a===false&&b===true&&e.s.T1===false}],
+  ["Interlock blocks the second direction",function(){var e=new Engine(interlockSpec());press(e,"fwd");press(e,"rev");return e.s.F===true&&e.s.R===false}],
+  ["Interlock works from the other side too",function(){var e=new Engine(interlockSpec());press(e,"rev");press(e,"fwd");return e.s.R===true&&e.s.F===false}],
+  ["An oscillating circuit is detected",function(){var e=new Engine({inputs:[],rungs:[{coil:"X",logic:["nc","X"]}]});return e.solve()===false}]
+];
+document.getElementById("runTests").addEventListener("click",function(){
+  var ul=document.getElementById("results"),pass=0;ul.innerHTML="";
+  TESTS.forEach(function(t){
+    var ok=false;try{ok=t[1]()}catch(err){ok=false}
+    if(ok)pass++;
+    var li=document.createElement("li");li.className=ok?"pass":"fail";
+    li.textContent=(ok?"Pass: ":"Fail: ")+t[0];ul.appendChild(li);
+  });
+  document.getElementById("sum").textContent=pass+" of "+TESTS.length+" tests passed.";
+});
+
+ollTo(0,/* ---------- Star-delta module (Stage 6) ---------- */
+function sdSpec(){return {inputs:["start","stop","ol"],rungs:[
+  {coil:"K1",logic:["and",["nc","ol"],["nc","stop"],["or",["no","start"],["no","K1"]]]},
+  {coil:"K3",logic:["and",["no","K1"],["nc","K2"],["nc","T1"]]},
+  {coil:"K2",logic:["and",["no","K1"],["nc","K3"],["or",["no","T1"],["no","K2"]]]},
+  {coil:"T1",type:"ton",delay:5,logic:["and",["no","K1"],["nc","K2"]]}
+]}}
+var seng=new Engine(sdSpec()), SD={start:false,stop:false,ol:false};
+var sdl=[], sdc=[], sdk=[], sdhtml="";
+function sdClosed(it){var v=seng.s[it.n];return it.k==="nc"?!v:!!v}
+function sdContact(x,y,it,inL,below){
+  var id="sdc"+sdc.length; sdc.push([id,it,y]);
+  sdhtml+='<circle class="dot" cx="'+x+'" cy="'+y+'" r="3.5"/><circle class="dot" cx="'+(x+30)+'" cy="'+y+'" r="3.5"/>'
+    +'<line id="'+id+'" class="sym" x1="'+x+'" y1="'+y+'" x2="'+(x+30)+'" y2="'+y+'"/>'
+    +'<text class="lbl" x="'+(x-2)+'" y="'+(below?y+20:y-22)+'">'+it.t+'</text>';
+  return function(){return inL()&&sdClosed(it)};
+}
+function sdRung(y,items,cn,sub,en){
+  var cur=function(){return true}, pe=40;
+  sdl.push([14,y,40,y,cur]);
+  items.forEach(function(it,i){
+    var x=40+70*i, up=cur;
+    if(it.par){
+      var jl=x-15, jr=x+45, y2=y+36;
+      var oa=sdContact(x,y,it.par[0],up,false), ob=sdContact(x,y2,it.par[1],up,true);
+      sdl.push([pe,y,jl,y,up],[jl,y,x,y,up],[jl,y,jl,y2,up],[jl,y2,x,y2,up],[x+30,y,jr,y,oa],[x+30,y2,jr,y2,ob],[jr,y2,jr,y,ob]);
+      cur=function(){return oa()||ob()}; pe=jr;
+    }else{
+      var o=sdContact(x,y,it,up,false);
+      sdl.push([pe,y,x,y,up]); cur=o; pe=x+30;
+    }
+  });
+  var ef=en||function(){return seng.s[cn]};
+  sdl.push([pe,y,286,y,cur],[314,y,346,y,ef]);
+  sdk.push(["sdk"+cn,ef]);
+  sdhtml+='<circle id="sdk'+cn+'" class="coil" cx="300" cy="'+y+'" r="14"/><text class="coiltxt" x="300" y="'+(y+5)+'" text-anchor="middle">'+cn+'</text><text class="lbl" x="278" y="'+(y+32)+'">'+sub+'</text>';
+}
+sdRung(40,[{k:"nc",n:"stop",t:"Stop"},{k:"nc",n:"ol",t:"OL"},{par:[{k:"no",n:"start",t:"Start"},{k:"no",n:"K1",t:"K1 aux"}]}],"K1","Main");
+sdRung(128,[{k:"no",n:"K1",t:"K1 aux"},{k:"nc",n:"K2",t:"K2 (NC)"},{k:"nc",n:"T1",t:"T1 (NC)"}],"K3","Star");
+sdRung(184,[{k:"no",n:"K1",t:"K1 aux"},{k:"nc",n:"K3",t:"K3 (NC)"},{par:[{k:"no",n:"T1",t:"T1 (NO)"},{k:"no",n:"K2",t:"K2 aux"}]}],"K2","Delta");
+sdRung(268,[{k:"no",n:"K1",t:"K1 aux"},{k:"nc",n:"K2",t:"K2 (NC)"}],"T1","Timer 5 s",function(){return seng.en.T1});
+document.getElementById("sdSym").innerHTML=sdhtml;
+var spw=[];
+[60,110,160].forEach(function(x){spw.push([x,16,x,44,ON],[x,64,x,108,function(){return seng.s.K1}])});
+mkW("sdCtl",sdl); mkW("sdPwr",spw);
+function sdSolve(){["start","stop","ol"].forEach(function(k){seng.set(k,SD[k])});seng.solve()}
+function sdDraw(){
+  [sdl,spw].forEach(function(L){L.forEach(function(s){s[5].classList.toggle("on",!!s[4]())})});
+  sdc.forEach(function(c){document.getElementById(c[0]).setAttribute("y2",sdClosed(c[1])?c[2]:c[2]-13)});
+  sdk.forEach(function(k){document.getElementById(k[0]).classList.toggle("on",!!k[1]())});
+  var K1=seng.s.K1,K2=seng.s.K2,K3=seng.s.K3,acc=seng.acc.T1;
+  [60,110,160].forEach(function(x,i){var l=document.getElementById("sdp"+i);l.setAttribute("x2",K1?x:x+11);l.setAttribute("y2",K1?64:56)});
+  for(var i=0;i<3;i++){
+    var a=document.getElementById("sdA"+i), e=document.getElementById("sdD"+i);
+    a.classList.toggle("hide",!K3); a.classList.toggle("on",K3);
+    e.classList.toggle("hide",K3); e.classList.toggle("on",K2);
+  }
+  var fan=document.getElementById("sdFan");
+  fan.classList.toggle("spin",K1); fan.classList.toggle("slow",K3);
+  document.getElementById("sdMode").textContent=K3?"Star connection":K2?"Delta connection":"Windings idle";
+  document.getElementById("sdTK1").textContent="K1 line: "+(K1?"closed":"open");
+  document.getElementById("sdTK3").textContent="K3 star: "+(K3?"closed":"open");
+  document.getElementById("sdTK2").textContent="K2 delta: "+(K2?"closed":"open");
+  document.getElementById("sdV").textContent=K3?"Winding V: 58%":K2?"Winding V: 100%":"Windings idle";
+  document.getElementById("sdI").textContent=K3?"Start current: 1/3":K2?"Full torque and speed":"";
+  document.getElementById("sdFill").style.width=(K2?100:K3?Math.min(100,acc/5*100):0)+"%";
+  document.getElementById("sdStatus").textContent=SD.ol&&!K1
+    ? "Overload tripped. All contactors are off. Reset it, then press Start."
+    : K3 ? "Star: K1 and K3 are closed. Timer: "+acc.toFixed(1)+" s of 5 s."
+    : K2 ? "Delta: K3 has dropped out and K2 is closed. The windings now get full line voltage."
+    : "Stopped. Press Start.";
+  document.getElementById("sdOl").textContent=SD.ol?"Reset overload":"Trip overload";
+}
+function sdHold(id,key){
+  var b=document.getElementById(id);
+  function dn(e){e.preventDefault();SD[key]=true;b.classList.add("down");sdSolve();sdDraw()}
+  function up(){if(!SD[key])return;SD[key]=false;b.classList.remove("down");sdSolve();sdDraw()}
+  b.addEventListener("pointerdown",dn);
+  ["pointerup","pointerleave","pointercancel"].forEach(function(t){b.addEventListener(t,up)});
+  b.addEventListener("keydown",function(e){if((e.key===" "||e.key==="Enter")&&!e.repeat)dn(e)});
+  b.addEventListener("keyup",function(e){if(e.key===" "||e.key==="Enter")up()});
+}
+sdHold("sdStart","start"); sdHold("sdStop","stop");
+document.getElementById("sdOl").addEventListener("click",function(){SD.ol=!SD.ol;sdSolve();sdDraw()});
+sdSolve(); sdDraw();
+setInterval(function(){
+  if(!document.getElementById("v-stardelta").classList.contains("active")) return;
+  seng.tick(0.1); sdDraw();
+},100);
+TESTS.push(
+  ["Star-delta starts in star (K1 and K3 on, K2 off)",function(){var e=new Engine(sdSpec());press(e,"start");return e.s.K1&&e.s.K3&&!e.s.K2}],
+  ["Star-delta switches to delta after 5 seconds",function(){var e=new Engine(sdSpec());press(e,"start");for(var i=0;i<45;i++)e.tick(0.1);var a=e.s.K3&&!e.s.K2;for(i=0;i<15;i++)e.tick(0.1);return a&&e.s.K2&&!e.s.K3}],
+  ["Star-delta: K3 and K2 are never on together",function(){var e=new Engine(sdSpec());press(e,"start");for(var i=0;i<100;i++){e.tick(0.1);if(e.s.K3&&e.s.K2)return false}return true}],
+  ["Star-delta: Stop resets everything, then it restarts in star",function(){var e=new Engine(sdSpec());press(e,"start");for(var i=0;i<60;i++)e.tick(0.1);press(e,"stop");var a=!e.s.K1&&!e.s.K2&&!e.s.K3&&!e.s.T1;press(e,"start");return a&&e.s.K3&&!e.s.K2}]
+);
+:root{
+  --bg:#EDF0F3; --panel:#FFFFFF; --ink:#16233B; --muted:#5A667A; --line:#C9D0DA;
+  --live:#E8A100; --live-ink:#5A3F00; --wire-off:#9AA5B5; --accent:#1F5FBF; --ok:#1E8A55;
+  --head:"Barlow Semi Condensed","Arial Narrow",sans-serif;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101826; --panel:#18233A; --ink:#E6ECF5; --muted:#9BA8BD; --line:#2C3A56;
+    --live:#FFB81F; --live-ink:#FFE2A0; --wire-off:#4D5B76; --accent:#6FA3FF; --ok:#4CC58A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101826; --panel:#18233A; --ink:#E6ECF5; --muted:#9BA8BD; --line:#2C3A56;
+  --live:#FFB81F; --live-ink:#FFE2A0; --wire-off:#4D5B76; --accent:#6FA3FF; --ok:#4CC58A; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--body)}
+h1,h2,h3{font-family:var(--head);line-height:1.1;margin:0 0 .5em;letter-spacing:.005em}
+h1{font-size:clamp(2rem,7vw,3.2rem);font-weight:700}
+h2{font-size:1.5rem;font-weight:600}
+h3{font-size:1.2rem;font-weight:600}
+p{margin:0 0 1em;max-width:62ch}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar{max-width:1040px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.brand{font:700 1.25rem var(--head);color:var(--ink);text-decoration:none}
+nav{display:flex;gap:.25rem;flex-wrap:wrap}
+nav a{padding:.4rem .7rem;border-radius:6px;text-decoration:none;color:var(--muted);font-weight:600;font-size:.95rem}
+nav a:hover{background:var(--bg);color:var(--ink)}
+nav a[aria-current="page"]{background:var(--ink);color:var(--panel)}
+
+main{max-width:1040px;margin:0 auto;padding:1.5rem 1rem 3rem}
+.view{display:none}.view.active{display:block}
+
+.hero{display:grid;gap:1.5rem;align-items:center;margin-bottom:2.5rem}
+@media(min-width:820px){.hero{grid-template-columns:1fr 1.15fr}}
+.lede{color:var(--muted);font-size:1.1rem}
+
+.rig{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1rem}
+.rig svg{width:100%;height:auto;display:block}
+.rig .cap{font-size:.95rem;color:var(--muted);margin:.6rem 0 .8rem;min-height:3em}
+.btns{display:flex;gap:.6rem}
+.btns button{flex:1;min-height:48px;border:2px solid var(--ink);border-radius:8px;background:var(--panel);color:var(--ink);font:600 1rem var(--head);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#bStart{background:var(--ok);border-color:var(--ok);color:#fff}
+#bStop{background:#C0392B;border-color:#C0392B;color:#fff}
+.btns button:active,.btns button.down{transform:translateY(2px);filter:brightness(.9)}
+
+.w{stroke:var(--wire-off);stroke-width:3;fill:none;stroke-linecap:round;transition:stroke .12s}
+.w.on{stroke:var(--live)}
+.sym{stroke:var(--ink);stroke-width:3;fill:none;stroke-linecap:round}
+.dot{fill:var(--ink)}
+.lbl{font:600 11px var(--head);fill:var(--muted)}
+.coil{fill:var(--panel);stroke:var(--ink);stroke-width:3;transition:fill .12s}
+.coil.on{fill:var(--live)}
+.coiltxt{font:700 13px var(--head);fill:var(--ink)}
+.rail{stroke:var(--ink);stroke-width:4;stroke-linecap:round}
+
+.grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1.1rem;color:inherit;text-decoration:none}
+a.card:hover{border-color:var(--accent)}
+.card p{color:var(--muted);margin-bottom:.8rem;font-size:.97rem}
+.tag{display:inline-block;font:600 .85rem var(--head);padding:.15rem .55rem;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.tag.next{border-color:var(--ok);color:var(--ok)}
+.sub{margin-top:2.5rem}
+.stub{background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:1.5rem}
+.runbtn{min-height:48px;padding:0 1.2rem;border:2px solid var(--ink);border-radius:8px;background:var(--ink);color:var(--panel);font:600 1rem var(--head);cursor:pointer}
+.results{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:.5rem}
+.results li{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--line);border-radius:8px;padding:.6rem .8rem}
+.results li.pass{border-left-color:var(--ok)}
+.results li.fail{border-left-color:#C0392B}
+.pair{display:grid;gap:1rem;align-items:start}
+@media(min-width:820px){.pair{grid-template-columns:1fr 1fr}}
+.box{fill:var(--panel);stroke:var(--ink);stroke-width:3}
+.box.trip{fill:none;stroke:#C0392B;stroke-width:4}
+.boxt{font:600 13px var(--head);fill:var(--ink)}
+.steps{padding-left:1.3rem;max-width:62ch}.steps li{margin-bottom:.4rem}
+.dock{position:sticky;bottom:0;margin-top:1.5rem;padding:.7rem;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 -4px 12px rgba(0,0,0,.1)}
+.dock .st{margin:0 0 .6rem;font-weight:600;max-width:none;min-height:3em}
+#dStart{background:var(--ok);border-color:var(--ok);color:#fff}
+#dStop{background:#C0392B;border-color:#C0392B;color:#fff}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spin{animation:none}}
+.hint{color:var(--muted);font-size:.95rem}
+.hot{fill:transparent;stroke:none;cursor:pointer}
+.hot:hover,.hot:focus-visible{stroke:var(--accent);stroke-width:2;stroke-dasharray:4 3}
+.hot.sel{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:none}
+.info{max-height:38vh;overflow:auto;margin-bottom:.7rem;padding:.7rem .8rem;border:1px solid var(--line);border-left:6px solid var(--live);border-radius:8px;background:var(--bg)}
+.info[hidden]{display:none}
+.info h3{margin:0 0 .3em;font-size:1.1rem}
+.info p{margin:0 0 .5em;font-size:.95rem;max-width:none}
+.info .x{float:right;margin-left:.5rem;min-height:36px;padding:0 .7rem;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:600 .9rem var(--head);cursor:pointer}
+.btns.four{flex-wrap:wrap}.btns.four button{flex:1 1 40%}
+#frFwd,#frRev{background:var(--ok);border-color:var(--ok);color:#fff}
+#frStop{background:#C0392B;border-color:#C0392B;color:#fff}
+.spin.rev{animation-direction:reverse}
+.hide{display:none}
+.spin.slow{animation-duration:1.8s}
+.meter{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:.6rem}
+.meter>div{height:100%;width:0;background:var(--live);transition:width .1s linear}
+#sdStart{background:var(--ok);border-color:var(--ok);color:#fff}
+#sdStop{background:#C0392B;border-color:#C0392B;color:#fff}
+.exrow{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+.exrow button{min-height:44px;padding:0 .9rem;border:2px solid var(--ink);border-radius:8px;background:var(--panel);color:var(--ink);font:600 .95rem var(--head);cursor:pointer}
+.rung{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.7rem;margin-bottom:.8rem}
+.rnum{font:700 .9rem var(--head);color:var(--muted);margin-bottom:.2rem}
+.rline{display:flex;align-items:center;overflow-x:auto;padding:.3rem 0}
+.rail{flex:none;width:4px;align-self:stretch;min-height:56px;background:var(--ink);border-radius:2px}
+.wire{flex:1 0 14px;height:3px;background:var(--wire-off);transition:background .1s}
+.wire.live{background:var(--live)}
+.el{flex:none;display:flex;flex-direction:column;gap:3px;padding:4px;border:2px solid var(--line);border-radius:8px;background:var(--bg);transition:border-color .1s,background .1s}
+.el.live{border-color:var(--live);background:color-mix(in srgb,var(--live) 22%,var(--panel))}
+.el select{font:600 .85rem var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:.25rem;min-width:4rem;min-height:34px}
+.el .cs{text-align:center;font:700 1.1rem var(--head)}.el .sm{text-align:center;font-size:.75rem;color:var(--muted)}
+.par{flex:none;display:flex;flex-direction:column;gap:6px;padding:0 6px;border-left:3px solid var(--wire-off);border-right:3px solid var(--wire-off)}
+.rctl{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
+.rctl button{min-height:38px;padding:0 .7rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:600 .85rem var(--head);cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem}
+.chip{min-height:40px;padding:0 .7rem;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:600 .9rem var(--head);cursor:pointer}
+.chip.on{background:var(--live);border-color:var(--live);color:#1a1200}
+.ind{display:inline-flex;align-items:center;gap:.35rem;font:600 .85rem var(--head);color:var(--muted);padding:.2rem .5rem;border:1px solid var(--line);border-radius:99px}
+.ind::before{content:"";width:.7rem;height:.7rem;border-radius:50%;background:var(--wire-off)}
+.ind.on{color:var(--ink);border-color:var(--live)}.ind.on::before{background:var(--live)}
+.legend dt{font:600 1rem var(--head)}.legend dd{margin:0 0 .7rem;color:var(--muted);max-width:62ch}
+.tag.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.qq{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:.8rem}
+.qq h3{margin-bottom:.6rem}
+.qo{display:block;width:100%;text-align:left;min-height:46px;margin-bottom:.4rem;padding:.5rem .8rem;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:400 1rem var(--body);cursor:pointer}
+.qo:disabled{cursor:default;color:var(--ink)}
+.qo.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--panel))}
+.qo.wrong{border-color:#C0392B}
+.why{margin:.5rem 0 0;color:var(--muted);font-size:.95rem}
+.score{font:700 1.4rem var(--head);margin:1rem 0 .5rem}
+.linkbtn{display:inline-flex;align-items:center;text-decoration:none}
+.fn{font:600 .85rem var(--head);text-align:center;padding:.15rem .3rem;color:var(--ink)}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Motor Control Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top"><div class="bar">
+  <a class="brand" href="#home">Motor Control Lab</a>
+  <nav aria-label="Modules">
+    <a href="#home" data-v="home">Home</a>
+    <a href="#dol" data-v="dol">DOL</a>
+    <a href="#stardelta" data-v="stardelta">Star-delta</a>
+    <a href="#fwdrev" data-v="fwdrev">Forward-reverse</a>
+    <a href="#plc" data-v="plc">PLC ladder</a>
+  </nav>
+</div></header>
+
+<main>
+<section id="v-home" class="view active">
+  <div class="hero">
+    <div>
+      <h1>Learn motor control by running the circuit.</h1>
+      <p class="lede">Press the buttons, watch the current move, and see why every component is there. No electrical background needed.</p>
+    </div>
+    <div class="rig">
+      <svg viewBox="0 0 360 190" role="img" aria-label="Start-stop control circuit with a seal-in contact">
+        <line class="rail" x1="14" y1="20" x2="14" y2="170"/><line class="rail" x1="346" y1="20" x2="346" y2="170"/>
+        <text class="lbl" x="6" y="14">L1</text><text class="lbl" x="334" y="14">L2</text>
+        <g id="wires"></g>
+        <!-- Stop NC -->
+        <circle class="dot" cx="50" cy="60" r="3.5"/><circle class="dot" cx="90" cy="60" r="3.5"/>
+        <line id="stopSym" class="sym" x1="50" y1="60" x2="90" y2="60"/>
+        <line class="sym" x1="64" y1="48" x2="76" y2="72" opacity=".0"/>
+        <text class="lbl" x="53" y="42">Stop (NC)</text>
+        <!-- Start NO -->
+        <circle class="dot" cx="140" cy="60" r="3.5"/><circle class="dot" cx="180" cy="60" r="3.5"/>
+        <line id="startSym" class="sym" x1="140" y1="60" x2="178" y2="46"/>
+        <text class="lbl" x="141" y="36">Start (NO)</text>
+        <!-- K1 aux -->
+        <circle class="dot" cx="140" cy="120" r="3.5"/><circle class="dot" cx="180" cy="120" r="3.5"/>
+        <line id="kSym" class="sym" x1="140" y1="120" x2="178" y2="106"/>
+        <text class="lbl" x="141" y="144">K1 seal-in contact</text>
+        <!-- coil -->
+        <circle id="coil" class="coil" cx="265" cy="60" r="20"/>
+        <text class="coiltxt" x="265" y="65" text-anchor="middle">K1</text>
+        <text class="lbl" x="243" y="92">Contactor coil</text>
+      </svg>
+      <p class="cap" id="cap">Hold Start. The coil energizes.</p>
+      <div class="btns">
+        <button id="bStart" type="button">Start</button>
+        <button id="bStop" type="button">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>Choose a module</h2>
+  <div class="grid">
+    <a class="card" href="#dol"><h3>DOL starter</h3><p>The simplest way to start a motor: connect it straight to the supply.</p><span class="tag next">Ready</span></a>
+    <a class="card" href="#stardelta"><h3>Star-delta starter</h3><p>Reduce the starting current with a timed switch from star to delta.</p><span class="tag next">Ready</span></a>
+    <a class="card" href="#fwdrev"><h3>Forward-reverse control</h3><p>Swap two phases to reverse the motor, and interlock so both can never close.</p><span class="tag next">Ready</span></a>
+    <a class="card" href="#plc"><h3>PLC ladder logic</h3><p>Write the same circuits as ladder rungs and run them in a scan cycle.</p><span class="tag next">Ready</span></a>
+  </div>
+  <p class="sub">Developer tools: <a href="#test">run the engine self-test</a></p>
+</section>
+
+<section id="v-dol" class="view">
+<h1>DOL starter</h1>
+<p class="lede">Direct-on-line means the motor is connected straight to the supply when the contactor closes. Two circuits do the job: a power circuit that carries the motor current, and a low-current control circuit that decides when the contactor closes.</p>
+<p class="hint">Tap any component in either diagram to see what it is and why it is there.</p>
+<div class="pair">
+<div class="rig"><h3>Control circuit</h3>
+<svg viewBox="0 0 360 150" role="img" aria-label="DOL control circuit with stop, start, seal-in contact, overload contact and coil K1">
+<line class="rail" x1="14" y1="20" x2="14" y2="140"/><line class="rail" x1="346" y1="20" x2="346" y2="140"/>
+<text class="lbl" x="6" y="14">L1</text><text class="lbl" x="334" y="14">L2</text>
+<g id="dCtlW"></g>
+<circle class="dot" cx="50" cy="60" r="3.5"/><circle class="dot" cx="90" cy="60" r="3.5"/><line id="dStopSym" class="sym" x1="50" y1="60" x2="90" y2="60"/><text class="lbl" x="50" y="30">Stop (NC)</text>
+<circle class="dot" cx="140" cy="60" r="3.5"/><circle class="dot" cx="180" cy="60" r="3.5"/><line id="dStartSym" class="sym" x1="140" y1="60" x2="178" y2="46"/><text class="lbl" x="140" y="30">Start (NO)</text>
+<circle class="dot" cx="140" cy="120" r="3.5"/><circle class="dot" cx="180" cy="120" r="3.5"/><line id="dKSym" class="sym" x1="140" y1="120" x2="178" y2="106"/><text class="lbl" x="126" y="142">K1 auxiliary (NO)</text>
+<circle class="dot" cx="215" cy="60" r="3.5"/><circle class="dot" cx="245" cy="60" r="3.5"/><line id="dOlSym" class="sym" x1="215" y1="60" x2="245" y2="60"/><text class="lbl" x="205" y="30">Overload (NC)</text>
+<circle id="dCoil" class="coil" cx="295" cy="60" r="18"/><text class="coiltxt" x="295" y="65" text-anchor="middle">K1</text><text class="lbl" x="262" y="94">Contactor coil</text>
+</svg></div>
+<div class="rig"><h3>Power circuit</h3>
+<svg viewBox="0 0 360 262" role="img" aria-label="Three-phase power circuit with breaker, contactor contacts, overload relay and motor">
+<g id="dPwrW"></g>
+<text class="lbl" x="64" y="12">L1</text><text class="lbl" x="124" y="12">L2</text><text class="lbl" x="184" y="12">L3</text>
+<rect class="box" x="40" y="42" width="180" height="20" rx="4"/><text class="boxt" x="130" y="57" text-anchor="middle">MCB (breaker)</text>
+<circle class="dot" cx="70" cy="92" r="3.5"/><circle class="dot" cx="70" cy="112" r="3.5"/><line id="dk0" class="sym" x1="70" y1="92" x2="83" y2="104"/>
+<circle class="dot" cx="130" cy="92" r="3.5"/><circle class="dot" cx="130" cy="112" r="3.5"/><line id="dk1" class="sym" x1="130" y1="92" x2="143" y2="104"/>
+<circle class="dot" cx="190" cy="92" r="3.5"/><circle class="dot" cx="190" cy="112" r="3.5"/><line id="dk2" class="sym" x1="190" y1="92" x2="203" y2="104"/>
+<text class="lbl" x="232" y="106">K1 main contacts</text>
+<rect id="dOlBox" class="box" x="40" y="136" width="180" height="20" rx="4"/><text class="boxt" x="130" y="151" text-anchor="middle">Overload relay</text>
+<rect class="box" x="40" y="190" width="180" height="62" rx="10"/><text class="boxt" x="70" y="226" text-anchor="middle">M 3~</text>
+<g id="dFan"><circle class="sym" cx="130" cy="221" r="20"/><line class="sym" x1="130" y1="221" x2="130" y2="203"/><line class="sym" x1="130" y1="221" x2="145" y2="230"/><line class="sym" x1="130" y1="221" x2="115" y2="230"/></g>
+</svg></div>
+</div>
+<h2 class="sub">How it runs</h2>
+<ol class="steps"><li>Press Start. Current flows through Stop and the overload contact to coil K1.</li><li>K1 pulls in. Its three main contacts close and the motor starts. Its auxiliary contact closes too.</li><li>Release Start. The auxiliary contact keeps K1 energized. This is the seal-in.</li><li>Press Stop, or trip the overload. The coil loses power, K1 drops out and the motor stops.</li></ol>
+<div class="dock"><div id="info" class="info" hidden><button id="infoX" type="button" class="x" aria-label="Close explanation">Close</button><h3 id="infoT"></h3><p id="infoP"></p><p id="infoC"></p></div><p class="st" id="dStatus"></p><div class="btns"><button id="dStart" type="button">Start</button><button id="dStop" type="button">Stop</button><button id="dOl" type="button">Trip overload</button></div></div>
+</section>
+<section id="v-stardelta" class="view">
+<h1>Star-delta starter</h1>
+<p class="lede">Starting a large motor direct-on-line draws a very large current. A star-delta starter first connects the windings in star, so each winding gets about 58% of the line voltage and the line current is about one third. When a timer runs out it switches the windings to delta for full voltage. It only suits a motor whose windings are rated for delta at your supply voltage.</p>
+<div class="pair">
+<div class="rig"><h3>Control circuit</h3>
+<svg viewBox="0 0 360 310" role="img" aria-label="Star-delta control circuit with contactors K1, K3, K2 and timer T1">
+<line class="rail" x1="14" y1="6" x2="14" y2="300"/><line class="rail" x1="346" y1="6" x2="346" y2="300"/>
+<g id="sdCtl"></g><g id="sdSym"></g>
+</svg></div>
+<div class="rig"><h3>Power circuit and windings</h3>
+<svg viewBox="0 0 360 300" role="img" aria-label="Power circuit with motor windings shown in star or delta">
+<g id="sdPwr"></g>
+<text class="lbl" x="54" y="11">L1</text><text class="lbl" x="104" y="11">L2</text><text class="lbl" x="154" y="11">L3</text>
+<circle class="dot" cx="60" cy="44" r="3.5"/><circle class="dot" cx="60" cy="64" r="3.5"/><line id="sdp0" class="sym" x1="60" y1="44" x2="60" y2="64"/>
+<circle class="dot" cx="110" cy="44" r="3.5"/><circle class="dot" cx="110" cy="64" r="3.5"/><line id="sdp1" class="sym" x1="110" y1="44" x2="110" y2="64"/>
+<circle class="dot" cx="160" cy="44" r="3.5"/><circle class="dot" cx="160" cy="64" r="3.5"/><line id="sdp2" class="sym" x1="160" y1="44" x2="160" y2="64"/>
+<text class="lbl" x="185" y="58">K1 main contacts</text>
+<rect class="box" x="20" y="108" width="320" height="180" rx="10"/>
+<line id="sdD0" class="w" x1="110" y1="138" x2="62" y2="232"/><line id="sdD1" class="w" x1="62" y1="232" x2="158" y2="232"/><line id="sdD2" class="w" x1="158" y1="232" x2="110" y2="138"/>
+<line id="sdA0" class="w hide" x1="110" y1="201" x2="110" y2="138"/><line id="sdA1" class="w hide" x1="110" y1="201" x2="62" y2="232"/><line id="sdA2" class="w hide" x1="110" y1="201" x2="158" y2="232"/>
+<text class="boxt" id="sdMode" x="110" y="264" text-anchor="middle">Windings idle</text>
+<text class="boxt" id="sdTK1" x="200" y="135"></text><text class="boxt" id="sdTK3" x="200" y="157"></text><text class="boxt" id="sdTK2" x="200" y="179"></text>
+<text class="boxt" id="sdV" x="200" y="205"></text><text class="boxt" id="sdI" x="200" y="225"></text>
+<g id="sdFan"><circle class="sym" cx="270" cy="262" r="18"/><line class="sym" x1="270" y1="262" x2="270" y2="245"/><line class="sym" x1="270" y1="262" x2="285" y2="271"/><line class="sym" x1="270" y1="262" x2="255" y2="271"/></g>
+</svg></div>
+</div>
+<h2 class="sub">How it runs</h2>
+<ol class="steps"><li>Press Start. K1 closes and the timer begins. K3 also closes, which joins the winding ends together: star.</li><li>Watch the timer bar. The motor runs slower and gently while it accelerates in star.</li><li>When the timer finishes, its contact opens the K3 rung and closes the K2 rung. K3 drops out and K2 closes: delta.</li><li>Each of K3 and K2 has a normally closed contact in the other’s rung, so they can never be closed together. That would short the supply.</li></ol>
+<div class="dock"><p class="st" id="sdStatus"></p><div class="meter" aria-hidden="true"><div id="sdFill"></div></div><div class="btns"><button id="sdStart" type="button">Start</button><button id="sdStop" type="button">Stop</button><button id="sdOl" type="button">Trip overload</button></div></div>
+</section>
+<section id="v-fwdrev" class="view">
+<h1>Forward-reverse control</h1>
+<p class="lede">To reverse a three-phase motor you swap any two of the three phases. Two contactors do it: F connects L1, L2, L3 straight through, and R swaps L1 and L3. If both closed together they would short the supply, so each coil rung contains a normally closed auxiliary contact of the other contactor. That is electrical interlocking.</p>
+<div class="pair">
+<div class="rig"><h3>Control circuit</h3>
+<svg viewBox="0 0 360 220" role="img" aria-label="Forward and reverse control rungs with interlocking contacts">
+<line class="rail" x1="14" y1="10" x2="14" y2="210"/><line class="rail" x1="346" y1="10" x2="346" y2="210"/>
+<text class="lbl" x="6" y="8">L1</text><text class="lbl" x="334" y="8">L2</text>
+<g id="frCtl"></g><g id="frSym"></g>
+</svg></div>
+<div class="rig"><h3>Power connections</h3>
+<svg viewBox="0 0 360 290" role="img" aria-label="Supply phases L1 L2 L3 connected to motor terminals U V W, straight for forward and swapped for reverse">
+<g id="frPwr"></g>
+<circle class="dot" cx="70" cy="40" r="4"/><circle class="dot" cx="70" cy="90" r="4"/><circle class="dot" cx="70" cy="140" r="4"/>
+<circle class="dot" cx="290" cy="40" r="4"/><circle class="dot" cx="290" cy="90" r="4"/><circle class="dot" cx="290" cy="140" r="4"/>
+<text class="lbl" x="44" y="44">L1</text><text class="lbl" x="44" y="94">L2</text><text class="lbl" x="44" y="144">L3</text>
+<text class="lbl" x="300" y="44">U</text><text class="lbl" x="300" y="94">V</text><text class="lbl" x="300" y="144">W</text>
+<text class="boxt" id="frPhase" x="180" y="190" text-anchor="middle">Stopped</text>
+<g id="frFan"><circle class="sym" cx="180" cy="240" r="22"/><line class="sym" x1="180" y1="240" x2="180" y2="220"/><line class="sym" x1="180" y1="240" x2="197" y2="250"/><line class="sym" x1="180" y1="240" x2="163" y2="250"/></g>
+<text class="lbl" x="130" y="282">3-phase motor</text>
+</svg></div>
+</div>
+<h2 class="sub">Try this</h2>
+<ol class="steps"><li>Press Fwd. F pulls in and the motor turns one way.</li><li>While it runs, hold Rev. Nothing happens, because F’s auxiliary contact in the Rev rung is open.</li><li>Press Stop, then Rev. R pulls in, L1 and L3 are swapped, and the motor turns the other way.</li><li>Trip the overload to watch both contactors drop out.</li></ol>
+<div class="dock"><p class="st" id="frStatus"></p><div class="btns four"><button id="frFwd" type="button">Fwd</button><button id="frRev" type="button">Rev</button><button id="frStop" type="button">Stop</button><button id="frOl" type="button">Trip overload</button></div></div>
+</section>
+<section id="v-plc" class="view">
+<h1>PLC ladder logic</h1>
+<p class="lede">A PLC replaces relay wiring with a program. Each rung is a row of contacts that must pass power to an output coil. The PLC repeats a scan cycle: read the inputs, solve the rungs from top to bottom, then update the outputs. Tap the inputs in the bar at the bottom to flip them, and edit any rung to see what changes.</p>
+<div class="exrow"><button type="button" data-ex="1">Example: Start/Stop</button><button type="button" data-ex="2">Example: Interlock</button><button type="button" data-ex="3">Example: Timer</button><button type="button" data-ex="0">Clear</button></div>
+<div id="rungs"></div>
+<button type="button" id="pAddR" class="runbtn">+ Add rung</button>
+<h2 class="sub">Know your symbols</h2>
+<dl class="legend">
+<dt>NO contact (examine if on)</dt><dd>Passes power when its address is ON. This is the ladder version of a Start button or a relay contact that closes.</dd>
+<dt>NC contact (examine if off)</dt><dd>Passes power when its address is OFF. Use it for Stop. The program needs it as NC so that pressing Stop (input ON) cuts power.</dd>
+<dt>Parallel branch</dt><dd>Two contacts side by side. Either one can pass power, which is OR logic. A branch with Start and the motor’s own output is the seal-in.</dd>
+<dt>Output coil</dt><dd>Turns its address ON when power reaches it, and OFF when it does not.</dd>
+<dt>Timer T0 (TON, 3 s)</dt><dd>Its contact turns ON after its rung has had power for 3 seconds without a break. It resets as soon as power is lost.</dd>
+<dt>Scan order</dt><dd>Rungs are solved top to bottom, once per scan. A contact that reads an output defined lower down sees last scan’s value.</dd>
+</dl>
+<div class="dock"><p class="st" id="pStatus"></p><div class="chips" id="pIn"></div><div class="chips" id="pOut"></div><div class="btns"><button id="pRun" type="button">Stop PLC</button><button id="pStep" type="button" disabled>Step one scan</button></div></div>
+</section>
+<section id="v-quizdol" class="view"></section><section id="v-quizfwdrev" class="view"></section><section id="v-quizstardelta" class="view"></section><section id="v-quizplc" class="view"></section>
+<section id="v-faults" class="view">
+<h1>Fault finding</h1>
+<p class="lede">Each circuit below has a deliberate wiring error. Operate it with the buttons at the bottom, watch what it does, then decide what the fault is. A real technician does exactly this before reaching for a meter.</p>
+<div class="chips" id="fNav"></div>
+<div class="qq"><h3 id="fTitle"></h3><p id="fSym"></p></div>
+<div id="fRungs"></div>
+<div class="qq"><h3>What is the fault?</h3><div id="fOpts"></div><p class="why" id="fWhy" hidden></p><div class="rctl"><button type="button" id="fHint">Show hint</button><button type="button" id="fNext" hidden>Next fault</button></div><p class="why" id="fHintT" hidden></p></div>
+<div class="dock"><p class="st" id="fStatus"></p><div class="chips" id="fIn"></div><div class="chips" id="fOut"></div></div>
+</section>
+<section id="v-test" class="view"><h1>Engine self-test</h1><p>These checks run the shared simulation engine through the behaviours every module relies on.</p><button id="runTests" type="button" class="runbtn">Run tests</button><p id="sum" class="sub"></p><ul id="results" class="results"></ul></section>
+</main>
+
+<script src="js/app.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/selftest.js"></script>
+<script src="js/home.js"></script>
+<script src="js/dol.js"></script>
+<script src="js/dol-explainer.js"></script>
+<script src="js/fwdrev.js"></script>
+<script src="js/stardelta.js"></script>
+<script src="js/plc.js"></script>
+<script src="js/learn.js"></script>
+<script src="js/faults.js"></script>
+</body>
+</html>
+# Motor Control Lab
+
+Open index.html in any browser. No build step.
+
+- css/style.css: all styling
+- js/app.js: navigation
+- js/engine.js: relay logic engine (contacts, coils, timers)
+- js/dol.js, fwdrev.js, stardelta.js, plc.js, faults.js: learning modules
+- js/learn.js: quizzes, progress, tap-to-explain
+- js/selftest.js: engine self-test
+
+Scripts load in order (see index.html); they share globals.
+
+0);
+}
+window.addEventListener("hashchange",route); route();
+
