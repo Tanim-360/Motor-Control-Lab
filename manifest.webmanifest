@@ -1,0 +1,31 @@
+{
+ "name": "Motor Control Lab",
+ "short_name": "Motor Lab",
+ "description": "Learn DOL, star-delta, forward-reverse and PLC ladder logic by running the circuits.",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#EDF0F3",
+ "theme_color": "#16233B",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

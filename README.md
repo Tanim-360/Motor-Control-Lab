@@ -1,12 +1,5 @@
-# Motor Control Lab
+# Motor Control Lab (installable app, flat version)
 
-Open index.html in any browser. No build step.
-
-- css/style.css: all styling
-- js/app.js: navigation
-- js/engine.js: relay logic engine (contacts, coils, timers)
-- js/dol.js, fwdrev.js, stardelta.js, plc.js, faults.js: learning modules
-- js/learn.js: quizzes, progress, tap-to-explain
-- js/selftest.js: engine self-test
-
-Scripts load in order (see index.html); they share globals.
+All files sit in one folder with no subfolders, so it uploads to GitHub Pages in one drag.
+Host the whole folder over HTTPS, open index.html's address on your phone, then Install / Add to Home Screen.
+After changing any file, bump V in sw.js (mcl-v1 to mcl-v2).

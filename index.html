@@ -4,8 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Motor Control Lab</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16233B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Motor Lab">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top"><div class="bar">
@@ -187,16 +194,17 @@
 <section id="v-test" class="view"><h1>Engine self-test</h1><p>These checks run the shared simulation engine through the behaviours every module relies on.</p><button id="runTests" type="button" class="runbtn">Run tests</button><p id="sum" class="sub"></p><ul id="results" class="results"></ul></section>
 </main>
 
-<script src="js/app.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/selftest.js"></script>
-<script src="js/home.js"></script>
-<script src="js/dol.js"></script>
-<script src="js/dol-explainer.js"></script>
-<script src="js/fwdrev.js"></script>
-<script src="js/stardelta.js"></script>
-<script src="js/plc.js"></script>
-<script src="js/learn.js"></script>
-<script src="js/faults.js"></script>
+<script src="app.js"></script>
+<script src="engine.js"></script>
+<script src="selftest.js"></script>
+<script src="home.js"></script>
+<script src="dol.js"></script>
+<script src="dol-explainer.js"></script>
+<script src="fwdrev.js"></script>
+<script src="stardelta.js"></script>
+<script src="plc.js"></script>
+<script src="learn.js"></script>
+<script src="faults.js"></script>
+<script src="pwa.js"></script>
 </body>
 </html>
